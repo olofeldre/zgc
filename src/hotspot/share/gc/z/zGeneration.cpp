@@ -60,6 +60,73 @@
 #include "utilities/debug.hpp"
 #include "utilities/events.hpp"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <iostream>
+#include <pthread.h>
+#include <thread>
+#include <chrono>
+#include <sstream>
+
+enum ZAffinityConfiguration {
+  ALL = 0,
+  P_CORES,
+  E_CORES
+};
+
+class ZAffinityTask : public ZTask {
+private:
+  static constexpr const size_t _all[2] = {0, 23};
+  static constexpr const size_t _p_cores[2] = {0, 15};
+  static constexpr const size_t _e_cores[2] = {16, 23};
+  const ZAffinityConfiguration _configuration;
+
+public:
+  ZAffinityTask(ZAffinityConfiguration configuration) :
+      ZTask("ZAffinityTask"),
+      _configuration(configuration) {}
+
+  static inline void print_affinity() {
+    pthread_t thread = pthread_self();
+    cpu_set_t cpuset;
+    int a = pthread_getaffinity_np(thread, sizeof(cpuset), &cpuset);
+    std::stringstream s;
+    s << "Current affinity (" << std::hex << thread << std::dec << "):";
+    for (int j = 0; j < CPU_SETSIZE; j++) {
+      if (CPU_ISSET(j, &cpuset)) {
+        s << " " << j;
+      }
+    }
+    std::cout << s.str() << std::endl;
+  }
+
+  static inline void update_affinity(const size_t* affinity_set) {
+    pthread_t thread = pthread_self();
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    for (size_t i = affinity_set[0]; i <= affinity_set[1]; i++) {
+      CPU_SET(i, &cpuset);
+    }
+    pthread_setaffinity_np(thread, sizeof(cpuset), &cpuset);
+  }
+
+  virtual void work() {
+    switch (_configuration) {
+      case ALL:
+        update_affinity(_all);
+        break;
+      case P_CORES:
+        update_affinity(_p_cores);
+        break;
+      case E_CORES:
+        update_affinity(_e_cores);
+        break;
+      default:
+        ShouldNotReachHere();
+    }
+  }
+};
+
 static const ZStatPhaseGeneration ZPhaseGenerationYoung[] {
   ZStatPhaseGeneration("Young: Generation Collection (Minor)", ZGenerationId::young),
   ZStatPhaseGeneration("Young: Generation Collection (Major Preclean)", ZGenerationId::young),
