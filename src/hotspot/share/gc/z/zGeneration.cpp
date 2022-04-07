@@ -68,7 +68,7 @@
 #include <chrono>
 #include <sstream>
 
-enum ZAffinityConfiguration {
+enum class ZAffinityConfiguration {
   ALL = 0,
   P_CORES,
   E_CORES
@@ -112,13 +112,13 @@ public:
 
   virtual void work() {
     switch (_configuration) {
-      case ALL:
+	    case ZAffinityConfiguration::ALL:
         update_affinity(_all);
         break;
-      case P_CORES:
+	    case ZAffinityConfiguration::P_CORES:
         update_affinity(_p_cores);
         break;
-      case E_CORES:
+	    case ZAffinityConfiguration::E_CORES:
         update_affinity(_e_cores);
         break;
       default:
