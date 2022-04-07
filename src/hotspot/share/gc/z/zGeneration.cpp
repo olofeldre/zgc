@@ -547,6 +547,8 @@ void ZGenerationYoung::collect(ZYoungType type, ConcurrentGCTimer* timer) {
   ZGenerationCollectionScopeYoung scope(type, timer);
 
   // Phase 1: Pause Mark Start
+  ZAffinityTask e_cl(ZAffinityConfiguration::E_CORES);
+  workers()->run(&e_cl);
   pause_mark_start();
 
   // Phase 2: Concurrent Mark
@@ -561,6 +563,8 @@ void ZGenerationYoung::collect(ZYoungType type, ConcurrentGCTimer* timer) {
 
     abortpoint();
   }
+  ZAffinityTask all_cl(ZAffinityConfiguration::ALL);
+  workers()->run(&all_cl);
 
   // Phase 4: Concurrent Mark Free
   concurrent_mark_free();
@@ -857,6 +861,8 @@ void ZGenerationOld::collect(ConcurrentGCTimer* timer) {
   ZGenerationCollectionScopeOld scope(timer);
 
   // Phase 1: Concurrent Mark
+  ZAffinityTask e_cl(ZAffinityConfiguration::E_CORES);
+  workers()->run(&e_cl);
   concurrent_mark();
 
   abortpoint();
@@ -873,6 +879,9 @@ void ZGenerationOld::collect(ConcurrentGCTimer* timer) {
   concurrent_mark_free();
 
   abortpoint();
+
+  ZAffinityTask all_cl(ZAffinityConfiguration::ALL);
+  workers()->run(&all_cl);
 
   // Phase 4: Concurrent Process Non-Strong References
   concurrent_process_non_strong_references();
