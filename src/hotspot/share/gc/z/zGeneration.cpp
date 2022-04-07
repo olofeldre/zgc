@@ -545,6 +545,9 @@ public:
 
 void ZGenerationYoung::collect(ZYoungType type, ConcurrentGCTimer* timer) {
   ZGenerationCollectionScopeYoung scope(type, timer);
+  
+  ZAffinityTask all_cl(ZAffinityConfiguration::ALL);
+  workers()->run(&all_cl);
 
   // Phase 1: Pause Mark Start
   pause_mark_start();
@@ -567,6 +570,9 @@ void ZGenerationYoung::collect(ZYoungType type, ConcurrentGCTimer* timer) {
 
   abortpoint();
 
+  ZAffinityTask e_cl(ZAffinityConfiguration::E_CORES);
+  workers()->run(&e_cl);
+
   // Phase 5: Concurrent Reset Relocation Set
   concurrent_reset_relocation_set();
 
@@ -586,6 +592,7 @@ void ZGenerationYoung::collect(ZYoungType type, ConcurrentGCTimer* timer) {
 
   // Phase 8: Concurrent Relocate
   concurrent_relocate();
+  workers()->run(&all_cl);
 }
 
 class VM_ZMarkStartYoungAndOld : public VM_ZOperation {
