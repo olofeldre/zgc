@@ -741,6 +741,21 @@ jint universe_init() {
     return status;
   }
 
+  class MyClosure: public ThreadClosure {
+	  virtual void do_thread(Thread *thread){
+		  const pthread_t tid = thread->osthread()->thread_id();
+		  cpu_set_t myset;
+		  CPU_ZERO(&myset);
+		  for(int cpu = 16; cpu < 24; ++cpu){
+			  CPU_SET(cpu, &myset);
+		}
+		  sched_setaffinity(tid, sizeof(myset), &myset);
+	}
+};
+  MyClosure my_closure;
+
+  Universe::heap()->gc_threads_do(&my_closure);
+
   Universe::initialize_tlab();
 
   Metaspace::global_initialize();
